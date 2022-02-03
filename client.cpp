@@ -1,3 +1,4 @@
+#include <bits/stdc++.h>
 #include "client.h"
 #include "dns_message.h"
 #include <stdlib.h>
@@ -6,40 +7,41 @@
 #include <stdio.h>
 #include <ctime>
 #ifdef __WIN32__
-# include <winsock2.h>
+#include <winsock2.h>
 #else
 # include <sys/socket.h>
 #endif
 #include <stdlib.h>
-//#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <string.h>
-#define PORT 8080
+#define PORT 8089
+
+typedef int SOCKET;
 
 using namespace std;
 
 void ChangetoDnsNameFormat(unsigned char* header, unsigned char* domain_name)
 {
-	int lock=0 , i;
+	int lock = 0, i;
+	strcat((char*)domain_name, ".");
 
-	strcat((char*)domain_name,".");
-
-	for(i=0 ; i<(int)strlen((char*)domain_name) ; i++)
+	for(i = 0; i < (int)strlen((char*)domain_name); i++)
 	{
-		if(domain_name[i]=='.')
+		if(domain_name[i] == '.')
 		{
-			*header++ = i-lock;
-			for(;lock<i;lock++)
+			*header++ = (i - lock) + '0';
+			for(; lock < i; lock++)
 			{
-				*header++=domain_name[lock];
+				*header++ = domain_name[lock];
 			}
 			lock++; 
 		}
 	}
-
-    *header++='\0';
+    *header++ = '\0';
 }
 
-void format_query(unsigned char *domain) 
+int format_query(unsigned char *domain) 
 {
     srand(time(NULL));
     unsigned char buf[65536];
@@ -72,40 +74,40 @@ void format_query(unsigned char *domain)
     ques = (QUESTION*)&buf[sizeof(DNS_HEADER) + (strlen((const char*)name) + 1)];
     ques->qtype = htons(1); 
     ques->qclass = htons(1);
-
-    cout << endl;
-    // for(int i = 0; i < 3; i++) {
-    //     printf("%c", buf[i]);
-    // }
-
-    SOCKET s = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP); 
+    
+    int s = socket(AF_INET,SOCK_STREAM,0); 
     sockaddr_in dest;
 
     dest.sin_family = AF_INET;
-    dest.sin_port = htons(53);
+    dest.sin_port = htons(PORT);
     dest.sin_addr.s_addr = inet_addr("127.0.0.1"); 
 
-    printf("\nSending Packet...");
-	if(sendto(s, (char*)buf, sizeof(struct DNS_HEADER) + (strlen((const char*)name) + 1) + sizeof(struct QUESTION), 0, (struct sockaddr*)&dest,sizeof(dest))==SOCKET_ERROR)
-	{
-		printf("%d error",WSAGetLastError());
-	}
-	printf("Sent");
+    if(inet_pton(AF_INET, "127.0.0.1", &dest.sin_addr)<=0) 
+    {
+        printf("\nInvalid address/ Address not supported \n");
+        return 0;
+    }
+   
+    if (connect(s, (struct sockaddr *)&dest, sizeof(dest)) < 0)
+    {
+        printf("\nConnection Failed \n");
+        return 0;
+    }
 
-//     int i=sizeof(dest);
-// 	printf("\nReceiving answer...");
-// 	if(recvfrom (s,(char*)buf, 65536, 0, (struct sockaddr*)&dest, &i) == SOCKET_ERROR)
-// 	{
-// 		printf("Failed. Error Code : %d", WSAGetLastError());
-// 	}
-// 	printf("Received.");
+    printf("Connection successful");
+
+    send(s, (char*)buf, sizeof(struct DNS_HEADER) + (strlen((const char*)name) + 1) + sizeof(struct QUESTION), 0);
+
+    return 0;
 }
 
 int main() {
+    string hostname = "www.google.com";
+    unsigned char host[100];
 
-    unsigned char hostname[100];
-    cout << "\nEnter Hostname to Lookup : " << endl;
-	gets((char*)hostname);
+    for(int i = 0; i < hostname.length(); i++) {
+        host[i] = hostname[i];
+    }
 
-    format_query(hostname);
+    format_query(host);
 }

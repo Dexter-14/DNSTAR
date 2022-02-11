@@ -10,12 +10,19 @@
 #include "client.h"
 #include "resolver.h"
 #include "dns_message.h"
+#include <netdb.h>
+
+#include <sys/types.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+
 #define PORT 8089
 
 using namespace std;
 
 void resolve() 
-{}
+{
+}
 
 int main(int argc, char const *argv[])
 {
@@ -60,7 +67,22 @@ int main(int argc, char const *argv[])
 	DNS_HEADER *header = (DNS_HEADER*)&buf;
 
     unsigned char *reader = &buf[sizeof(DNS_HEADER)];
+
+    QUESTION *ques = (QUESTION*)&buf[sizeof(DNS_HEADER) + (strlen((const char*)reader) + 1)];
+
+    unsigned char *response = (unsigned char*) malloc (1000000 * sizeof(unsigned char));
+    
     cout << reader << endl;
+
+    char arr[16] = {'0'};
+
+    int s = strlen((char*)reader);
+
+    cout << s << endl;
+
+    for(int i = 0; i < s; i++) {
+        arr[i] = reader[i];
+    }
 	
 	return 0;
 }

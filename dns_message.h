@@ -33,6 +33,7 @@ struct DNS_HEADER
     unsigned char ra;
     unsigned char z;
     unsigned char rcode;
+    bool response;
     // unsigned char cd; 
     // unsigned char ad;  
     unsigned short q_count;

@@ -11,6 +11,7 @@
 #include "resolver.h"
 #include "dns_message.h"
 #include <netdb.h>
+#include "recursive_resolver.rs"
 
 #include <sys/types.h>
 #include <arpa/nameser.h>
@@ -206,6 +207,19 @@ void resolve()
 {
 }
 
+extern "C" void get_resolved_query(string qname);
+extern "C" void get_unresolved_query(string qname);
+
+// int get_resolved_ns(string qname)
+// {
+
+// }
+
+// int get_unresolved_ns(string qname)
+// {
+    
+// }
+
 int lookup(string qname, unsigned short qtype, string server) 
 {
     // let socket = UdpSocket::bind(("0.0.0.0", 43210))?;
@@ -252,7 +266,7 @@ int lookup(string qname, unsigned short qtype, string server)
     header->id = 6666;
     header->q_count = 1;
     header->rd = 1;
-
+    header->response = false;
     header->tc = 0;
     header->aa = 0;
     header->opcode = 0; 
@@ -326,6 +340,40 @@ int lookup(string qname, unsigned short qtype, string server)
 
     // DnsPacket::from_buffer(&mut res_buffer)
     return 0;
+}
+
+int recursive_lookup (string qname, unsigned short qtype, string server)
+{
+    int s = socket(AF_INET,SOCK_DGRAM,0); 
+    sockaddr_in dest;
+
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(53);
+    dest.sin_addr.s_addr = inet_addr(server.c_str()); 
+
+    if(inet_pton(AF_INET, server.c_str(), &dest.sin_addr)<=0) 
+    {
+        return 0;
+    }
+   
+    if (connect(s, (struct sockaddr *)&dest, sizeof(dest)) < 0)
+    {
+        return 0;
+    }
+
+    int response = lookup(qname, qtype, server);
+    if(response != NULL)
+    {
+        return true;
+    }
+
+    else {
+
+    }
+
+    auto new_ns_name = 0;
+
+    // int recursive_response =  recursive_lookup(new_ns_name, qtype);
 }
 
 int main(int argc, char const *argv[])
